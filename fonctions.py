@@ -13,9 +13,9 @@ def verif_status_code(url):
     else:
         return None
 
-"""Prend l'url du site en paramètre et renvoie la liste des catégories.
-Une catégorie est présentée par un dictionnaire avec comme clé le nom de la catégorie et comme valeur son url"""
 def list_url_categ(url):
+    """Prend l'url du site en paramètre et renvoie la liste des catégories.
+    Une catégorie est présentée par un dictionnaire avec comme clé le nom de la catégorie et comme valeur son url"""
     if verif_status_code(url) is not None:
         soup = verif_status_code(url)
         extract_div_content = soup.find('ul', {"class": "nav nav-list"})

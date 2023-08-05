@@ -1,0 +1,6 @@
+env/
+.idea/
+Donnees_Images.zip
+Fichier_csv/
+__pycache__/
+images/

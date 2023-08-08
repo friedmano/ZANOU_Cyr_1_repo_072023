@@ -7,6 +7,8 @@ from bs4 import BeautifulSoup
 nom_rep_csv = "Fichier_csv"
 nom_rep_image = "images"
 def verif_status_code(url):
+    """Prend en parametre une url, verifie son statut code et renvoie un objet BeautifulSoup si le status code = 200,
+    None dans le cas contraire"""
     page = requests.get(url)
     if page.status_code == 200:
         return BeautifulSoup(page.content, "html.parser")
@@ -31,6 +33,7 @@ def list_url_categ(url):
         print("Connexion echouée")
 
 def list_url_livre(url):
+    """Prend en parametre l'url d'une catégorie de livre et renvoie une liste d'url de tous les livres de cette catégorie"""
     if verif_status_code(url) is not None :
         list_url_livre = list()
         url_coupe = url[0:len(url) - 10]
@@ -51,6 +54,8 @@ def list_url_livre(url):
         print("Connexion echouée")
 
 def infos_livre(url):
+    """Prend en paramètre l'url d'un livre, extrait, transforme et renvoie toutes les informations sur un livre
+    sous forme de dictionnaire"""
     if verif_status_code(url) is not None :
         dict_infos_livre = dict()
         dict_infos_livre["product_page_url"] = url
@@ -84,13 +89,24 @@ def infos_livre(url):
         print("Connexion echouée")
 
 def list_dict_infos_livre(url):
+    """Prend en parametre l'url d'une catégorie et renvoie les informations relatives à chaque livre de cette catégorie
+    sous forme d'une liste de dictionnaire. Un dictionnaire contient les informations d'un livre """
     list_livre = list_url_livre(url)
     list_dict_infos_livre = list()
     for url_livre in list_livre:
         list_dict_infos_livre.append(infos_livre(url_livre))
     return list_dict_infos_livre
 
+def charger_images(url_img, nom_fichier):
+    """prend en parametre l'url de l'image du livre, un nom de fichier et charge l'image du livre dans le nom de fichier"""
+    with open(nom_fichier, 'wb') as fichier_image:
+        reponse = requests.get(url_img)
+        fichier_image.write(reponse.content)
+
 def creer_csv_par_categ(list_dict):
+    """Prend en paramètre la liste des informations relatives à chaque livre d'une catégorie, crée un fichier csv
+    portant le nom de la catégorie ayant pour en-tete le titre des informations extraites et valeurs les informations
+    extraites et charge les images des livres de cette catégorie dans un dossier"""
     nom_fichier_categ = nom_rep_csv+"/"+list_dict[0]["category"]+".csv"
     with open(nom_fichier_categ, "w", encoding='utf-8') as fichier:
         fielnames = ['product_page_url','UPC', 'title', 'Price (incl. tax)', 'Price (excl. tax)', 'Availability', 'product_description', 'category', 'review_rating', 'image_url']
@@ -101,6 +117,9 @@ def creer_csv_par_categ(list_dict):
             charger_images(dict["image_url"],nom_rep_image+"/"+dict["category"]+"/"+dict["UPC"]+".jpg")
 
 def generer_fichier(url):
+    """Prend en paramètre l'url du site. Cree les répertoires pour contenir le fichier csv et les fichiers images.
+     Appelle les fonctions pour la creation des fichiers csv et images
+    chargement des images """
     list_dict_categ = list_url_categ(url)
     os.mkdir(nom_rep_csv)
     os.mkdir(nom_rep_image)
@@ -110,7 +129,3 @@ def generer_fichier(url):
         creer_csv_par_categ(list_dict_infos_livre(list(dict_categ.values())[0]))
         print("Categorie : ", list(dict_categ.keys())[0], " => Enregistrement effectué avec succes\n")
 
-def charger_images(url_img, nom_fichier):
-    with open(nom_fichier, 'wb') as fichier_image:
-        reponse = requests.get(url_img)
-        fichier_image.write(reponse.content)

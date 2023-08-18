@@ -15,52 +15,52 @@ def verif_status_code(url):
     else:
         return None
 
-def list_url_categ(url):
-    """Prend l'url du site en paramètre et renvoie la liste des catégories.
-    Une catégorie est présentée par un dictionnaire avec comme clé le nom de la catégorie et comme valeur son url"""
-    if verif_status_code(url) is not None:
-        soup = verif_status_code(url)
+def list_url_categ(url_site):
+    """Prend l'url du site en paramètre et renvoie une liste de dictionnaire.
+    Chaque dictionnaire a comme clé le nom de la catégorie et comme valeur son url"""
+    if verif_status_code(url_site) is not None:
+        soup = verif_status_code(url_site)
         extract_div_content = soup.find('ul', {"class": "nav nav-list"})
         extract_a = extract_div_content.find('ul').find_all('a')
         list_dict_url_categ = list()
         dict_url_categ = dict()
         for lien in extract_a:
-            dict_url_categ[lien.text.strip()] = url+"/"+lien.get('href')
+            dict_url_categ[lien.text.strip()] = url_site+"/"+lien.get('href')
             list_dict_url_categ.append(dict_url_categ)
             dict_url_categ = dict()
         return list_dict_url_categ
     else:
         print("Connexion echouée")
 
-def list_url_livre(url):
+def list_url_livre(url_categ):
     """Prend en parametre l'url d'une catégorie de livre et renvoie une liste d'url de tous les livres de cette catégorie"""
-    if verif_status_code(url) is not None :
+    if verif_status_code(url_categ) is not None :
         list_url_livre = list()
-        url_coupe = url[0:len(url) - 10]
+        url_coupe = url_categ[0:len(url_categ) - 10]
         is_next = True
         while is_next:
-            soup = verif_status_code(url)
+            soup = verif_status_code(url_categ)
             extract_h3 = soup.find("ol", {'class': 'row'}).findAll("h3")
             for h3 in extract_h3:
-                book_url = url[0:36]+h3.findNext("a").get("href")[9:]
+                book_url = url_categ[0:36]+h3.findNext("a").get("href")[9:]
                 list_url_livre.append(book_url)
             extract_next = soup.find("li", {"class": "next"})
             if extract_next is None:
                 is_next = False
             else:
-                url = url_coupe + extract_next.find("a").get("href")
+                url_categ = url_coupe + extract_next.find("a").get("href")
         return list_url_livre
     else:
         print("Connexion echouée")
 
-def infos_livre(url):
+def infos_livre(url_livre):
     """Prend en paramètre l'url d'un livre, extrait, transforme et renvoie toutes les informations sur un livre
     sous forme de dictionnaire"""
-    if verif_status_code(url) is not None :
+    if verif_status_code(url_livre) is not None :
         dict_infos_livre = dict()
-        dict_infos_livre["product_page_url"] = url
+        dict_infos_livre["product_page_url"] = url_livre
         rating = {"One":1,"Two":2, "Three":3, "Four":4, "Five":5}
-        soup = verif_status_code(url)
+        soup = verif_status_code(url_livre)
 
         extract_categ_book = soup.find("ul",{"class":"breadcrumb"}).findAll("li")[2].findNext("a").text
         extract_title = soup.find("h1").text
@@ -69,7 +69,7 @@ def infos_livre(url):
         else:
             extract_product_desc = ""
         extract_star_rating = soup.find("p",{"class":"star-rating"}).get("class")[1]
-        extract_img_url = url[0:26] + soup.find('div',{"id":"product_gallery"}).find("img").get("src")[6:]
+        extract_img_url = url_livre[0:26] + soup.find('div',{"id":"product_gallery"}).find("img").get("src")[6:]
         extrac_table = soup.find("table")
         extrac_th = extrac_table.findAll("th")
         extrac_td = extrac_table.findAll("td")
@@ -88,10 +88,10 @@ def infos_livre(url):
     else:
         print("Connexion echouée")
 
-def list_dict_infos_livre(url):
+def list_dict_infos_livre(url_categ):
     """Prend en parametre l'url d'une catégorie et renvoie les informations relatives à chaque livre de cette catégorie
     sous forme d'une liste de dictionnaire. Un dictionnaire contient les informations d'un livre """
-    list_livre = list_url_livre(url)
+    list_livre = list_url_livre(url_categ)
     list_dict_infos_livre = list()
     for url_livre in list_livre:
         list_dict_infos_livre.append(infos_livre(url_livre))
@@ -104,9 +104,9 @@ def charger_images(url_img, nom_fichier):
         fichier_image.write(reponse.content)
 
 def creer_csv_par_categ(list_dict):
-    """Prend en paramètre la liste des informations relatives à chaque livre d'une catégorie, crée un fichier csv
-    portant le nom de la catégorie ayant pour en-tete le titre des informations extraites et valeurs les informations
-    extraites et charge les images des livres de cette catégorie dans un dossier"""
+    """Prend en paramètre la liste des informations de tous les livres d'une catégorie, crée un fichier csv
+    portant le nom de la catégorie. Ce fichier aura pour en-tete le titre des informations produit des livres.
+     Elle charge aussi les images des livres de cette catégorie dans un dossier"""
     nom_fichier_categ = nom_rep_csv+"/"+list_dict[0]["category"]+".csv"
     with open(nom_fichier_categ, "w", encoding='utf-8') as fichier:
         fielnames = ['product_page_url','UPC', 'title', 'Price (incl. tax)', 'Price (excl. tax)', 'Availability', 'product_description', 'category', 'review_rating', 'image_url']
@@ -116,11 +116,11 @@ def creer_csv_par_categ(list_dict):
             writer.writerow(dict)
             charger_images(dict["image_url"],nom_rep_image+"/"+dict["category"]+"/"+dict["UPC"]+".jpg")
 
-def generer_fichier(url):
-    """Prend en paramètre l'url du site. Cree les répertoires pour contenir le fichier csv et les fichiers images.
+def generer_fichier(url_site):
+    """Prend en paramètre l'url du site. Cree les répertoires pour contenir les fichiers csv et les fichiers images.
      Appelle les fonctions pour la creation des fichiers csv et images
     chargement des images """
-    list_dict_categ = list_url_categ(url)
+    list_dict_categ = list_url_categ(url_site)
     os.mkdir(nom_rep_csv)
     os.mkdir(nom_rep_image)
     for dict_categ in list_dict_categ:
